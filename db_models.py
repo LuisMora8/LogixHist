@@ -1,14 +1,6 @@
-from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
-from dotenv import load_dotenv
-import os
 
-# Flask and Database configuaration
-app = Flask(__name__)
-load_dotenv()
-app.secret_key = os.getenv('SECRET_KEY')
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://luis:developer@localhost/logixhistorian'
-db = SQLAlchemy(app)
+db = SQLAlchemy()
 
 
 # Device Model
@@ -16,10 +8,10 @@ class Device(db.Model):
     __tablename__ = 'devices'
     id = db.Column(db.Integer, primary_key=True,
                    autoincrement=True, nullable=False)
-    device_name = db.Column(db.String)
-    ip_address = db.Column(db.String)
+    device_name = db.Column(db.String(150))
+    ip_address = db.Column(db.String(150))
     processor_slot = db.Column(db.Integer)
-    device_type = db.Column(db.String, nullable=True)
+    device_type = db.Column(db.String(150), nullable=True)
     route = db.Column(db.Integer, nullable=True)
     connection_size = db.Column(db.Integer, nullable=True)
     socket_timeout = db.Column(db.Float, nullable=True)
@@ -42,11 +34,10 @@ class Tag(db.Model):
     __tablename__ = 'tags'
     id = db.Column(db.Integer, primary_key=True,
                    autoincrement=True, nullable=False)
-    tag_name = db.Column(db.String)
-    device_tag_name = db.Column(db.String)
-    data_type = db.Column(db.String)
-    device_type = db.Column(db.String, nullable=True)
-    description = db.Column(db.String)
+    tag_name = db.Column(db.String(150))
+    device_tag_name = db.Column(db.String(150))
+    data_type = db.Column(db.String(150))
+    description = db.Column(db.Text)
     # Foreign Key
     device_id = db.Column(db.Integer, db.ForeignKey('devices.id'))
     # Establish the bidirectional relationship with devices
@@ -54,36 +45,68 @@ class Tag(db.Model):
     # Define the one-to-many relationship with trending points
     points = db.relationship("Point", back_populates="tag")
 
-    def __init__(self, device, tag_name, device_tag_name, data_type=0, device_type=None, description=None):
+    def __init__(self, device, tag_name, device_tag_name, data_type=0, description=None):
         super.__init__()
         self.device = device
         self.tag_name = tag_name
         self.device_tag_name = device_tag_name
         self.data_type = data_type
-        self.device_type = device_type
         self.description = description
 
 
-""" Need to make subclasses of Points for different datatypes (Floats, Ints, Strings,...,) """
-# Points Model
-
-
+# Points Base Model
 class Point(db.Model):
-    __tablename__ = 'points'
+    __abstract__ = True
     id = db.Column(db.Integer, primary_key=True,
                    autoincrement=True, nullable=False)
-    value = db.Column(db.String)
-    timestamp = db.Column(db.String)
+    timestamp = db.Column(
+        db.TIMESTAMP, server_default=db.func.current_timestamp())
     data_type = db.Column(db.String)
     # Foreign Key
     tag_id = db.Column(db.Integer, db.ForeignKey('tags.id'))
     # Establish the bidirectional relationship with tags
     tag = db.relationship("Tag", back_populates="points")
 
-    def __init__(self, tag, value, timestamp, data_type):
+
+''' Subclasses of Points - to make separate trending tables for different datatypes '''
+
+
+# class IntegerPoint(Point):
+#     __tablename__ = 'integer_points'
+#     value = db.Column(db.Integer)
+
+#     def __init__(self, tag, value):
+#         super.__init__()
+#         self.tag = tag
+#         self.value = value
+
+
+class FloatPoint(Point):
+    __tablename__ = 'float_points'
+    value = db.Column(db.Float)
+    # __mapper_args__ = {'polymorphic_identity': 'float'}
+
+    def __init__(self, tag, value):
         super.__init__()
         self.tag = tag
         self.value = value
-        self.timestamp = timestamp
-        self.data_type = data_type
-        self.data_type = data_type
+
+
+# class StringPoint(Point):
+#     __tablename__ = 'string_points'
+#     value = db.Column(db.String)
+
+#     def __init__(self, tag, value):
+#         super.__init__()
+#         self.tag = tag
+#         self.value = value
+
+
+# class BoolPoint(Point):
+#     __tablename__ = 'boolean_points'
+#     value = db.Column(db.Boolean)
+
+#     def __init__(self, tag, value):
+#         super.__init__()
+#         self.tag = tag
+#         self.value = value
