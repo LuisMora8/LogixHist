@@ -1,10 +1,9 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 from flask_cors import CORS
 from flask_admin import Admin
-from flask_admin.contrib.sqla import ModelView
 
-from db_models import db, Device, Tag, Point, FloatPoint
-from admin_models import DeviceView, TagView, PointView, FloatPointView
+from db_models import db, Device, Tag, IntegerPoint, FloatPoint, StringPoint, BoolPoint
+from admin_models import DeviceView, TagView, IntegerPointView, FloatPointView, StringPointView, BoolPointView
 
 from dotenv import load_dotenv
 import os
@@ -34,6 +33,8 @@ if __name__ == '__main__':
         admin = Admin(app)
         admin.add_view(DeviceView(Device, db.session))
         admin.add_view(TagView(Tag, db.session))
-        admin.add_view(PointView(Point, db.session))
+        admin.add_view(IntegerPointView(IntegerPoint, db.session))
         admin.add_view(FloatPointView(FloatPoint, db.session))
+        admin.add_view(StringPointView(StringPoint, db.session))
+        admin.add_view(BoolPointView(BoolPoint, db.session))
     app.run(debug=True)

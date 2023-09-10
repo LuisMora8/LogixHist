@@ -8,7 +8,7 @@ class Device(db.Model):
     __tablename__ = 'devices'
     id = db.Column(db.Integer, primary_key=True,
                    autoincrement=True, nullable=False)
-    device_name = db.Column(db.String(150))
+    device_name = db.Column(db.String(150), unique=True, nullable=False)
     ip_address = db.Column(db.String(150))
     processor_slot = db.Column(db.Integer)
     device_type = db.Column(db.String(150), nullable=True)
@@ -19,7 +19,7 @@ class Device(db.Model):
     tags = db.relationship("Tag", back_populates="device")
 
     def __init__(self, device_name, ip_address, processor_slot=0, device_type=None, route=None, connection_size=None, socket_timeout=None):
-        super.__init__()
+        super().__init__()
         self.device_name = device_name
         self.ip_address = ip_address
         self.processor_slot = processor_slot
@@ -34,19 +34,19 @@ class Tag(db.Model):
     __tablename__ = 'tags'
     id = db.Column(db.Integer, primary_key=True,
                    autoincrement=True, nullable=False)
-    tag_name = db.Column(db.String(150))
+    tag_name = db.Column(db.String(150), unique=True, nullable=False)
     device_tag_name = db.Column(db.String(150))
     data_type = db.Column(db.String(150))
     description = db.Column(db.Text)
-    # Foreign Key
+    deadband = db.Column(db.Float)
+    history_type = db.Column(db.String(150))
+
+    # Foreign Key and Relationship with Devices
     device_id = db.Column(db.Integer, db.ForeignKey('devices.id'))
-    # Establish the bidirectional relationship with devices
     device = db.relationship("Device", back_populates="tags")
-    # Define the one-to-many relationship with trending points
-    points = db.relationship("Point", back_populates="tag")
 
     def __init__(self, device, tag_name, device_tag_name, data_type=0, description=None):
-        super.__init__()
+        super().__init__()
         self.device = device
         self.tag_name = tag_name
         self.device_tag_name = device_tag_name
@@ -54,37 +54,46 @@ class Tag(db.Model):
         self.description = description
 
 
-# Points Base Model
 class Point(db.Model):
     __abstract__ = True
     id = db.Column(db.Integer, primary_key=True,
                    autoincrement=True, nullable=False)
     timestamp = db.Column(
         db.TIMESTAMP, server_default=db.func.current_timestamp())
-    data_type = db.Column(db.String)
-    # Foreign Key
+
+
+class IntegerPoint(Point):
+    __tablename__ = 'integer_points'
+    value = db.Column(db.Integer)
+    # Foreign Key and Relationship with Tags
     tag_id = db.Column(db.Integer, db.ForeignKey('tags.id'))
-    # Establish the bidirectional relationship with tags
-    tag = db.relationship("Tag", back_populates="points")
+    tag = db.relationship("Tag", backref="integer_points", single_parent=True)
 
-
-''' Subclasses of Points - to make separate trending tables for different datatypes '''
-
-
-# class IntegerPoint(Point):
-#     __tablename__ = 'integer_points'
-#     value = db.Column(db.Integer)
-
-#     def __init__(self, tag, value):
-#         super.__init__()
-#         self.tag = tag
-#         self.value = value
+    def __init__(self, tag, value):
+        super().__init__()
+        self.tag = tag
+        self.value = value
 
 
 class FloatPoint(Point):
     __tablename__ = 'float_points'
     value = db.Column(db.Float)
-    # __mapper_args__ = {'polymorphic_identity': 'float'}
+    # Foreign Key and Relationship with Tags
+    tag_id = db.Column(db.Integer, db.ForeignKey('tags.id'))
+    tag = db.relationship("Tag", backref="float_points", single_parent=True)
+
+    def __init__(self, tag, value):
+        super().__init__()
+        self.tag = tag
+        self.value = value
+
+
+class StringPoint(Point):
+    __tablename__ = 'string_points'
+    value = db.Column(db.Text)
+    # Foreign Key and Relationship with Tags
+    tag_id = db.Column(db.Integer, db.ForeignKey('tags.id'))
+    tag = db.relationship("Tag", backref="string_points", single_parent=True)
 
     def __init__(self, tag, value):
         super.__init__()
@@ -92,21 +101,14 @@ class FloatPoint(Point):
         self.value = value
 
 
-# class StringPoint(Point):
-#     __tablename__ = 'string_points'
-#     value = db.Column(db.String)
+class BoolPoint(Point):
+    __tablename__ = 'bool_points'
+    value = db.Column(db.Boolean)
+    # Foreign Key and Relationship with Tags
+    tag_id = db.Column(db.Integer, db.ForeignKey('tags.id'))
+    tag = db.relationship("Tag", backref="bool_points", single_parent=True)
 
-#     def __init__(self, tag, value):
-#         super.__init__()
-#         self.tag = tag
-#         self.value = value
-
-
-# class BoolPoint(Point):
-#     __tablename__ = 'boolean_points'
-#     value = db.Column(db.Boolean)
-
-#     def __init__(self, tag, value):
-#         super.__init__()
-#         self.tag = tag
-#         self.value = value
+    def __init__(self, tag, value):
+        super.__init__()
+        self.tag = tag
+        self.value = value
