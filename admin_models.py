@@ -2,6 +2,8 @@ from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
 from query_functions import device_query, tag_query
 from wtforms.validators import DataRequired
+from wtforms import SelectField
+from flask_admin.form import Select2Widget
 
 admin = Admin()
 
@@ -11,6 +13,12 @@ class DeviceView(ModelView):
                    'device_type', 'route', 'connection_size', 'socket_timeout')
     form_columns = ('device_name', 'ip_address', 'processor_slot',
                     'device_type', 'route', 'connection_size', 'socket_timeout')
+
+    form_args = {
+        'ip_address': {
+            'validators': [DataRequired()]
+        }
+    }
 
 
 class TagView(ModelView):
@@ -22,10 +30,31 @@ class TagView(ModelView):
 
     form_columns = ('device', 'tag_name', 'device_tag_name',
                     'data_type', 'description')
+
+    DATA_TYPE_CHOICES = [
+        ('int', 'Integer'),
+        ('float', 'Float'),
+        ('string', 'String'),
+        ('bool', 'Boolean')
+    ]
+
+    form_overrides = {
+        'data_type': SelectField,
+    }
+
     form_args = {
         'device': {
             'query_factory': device_query,
             'get_label': 'device_name',
+            'validators': [DataRequired()]
+        },
+        'device_tag_name': {
+            'validators': [DataRequired()]
+        },
+        'data_type': {
+            'label': 'Data Type',
+            'widget': Select2Widget(),
+            'choices': DATA_TYPE_CHOICES,
             'validators': [DataRequired()]
         }
     }
