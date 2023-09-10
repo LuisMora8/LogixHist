@@ -45,13 +45,14 @@ class Tag(db.Model):
     device_id = db.Column(db.Integer, db.ForeignKey('devices.id'))
     device = db.relationship("Device", back_populates="tags")
 
-    def __init__(self, device, tag_name, device_tag_name, data_type=0, description=None):
+    def __init__(self, device, tag_name, device_tag_name, data_type=0, description=None, deadband=0):
         super().__init__()
         self.device = device
         self.tag_name = tag_name
         self.device_tag_name = device_tag_name
         self.data_type = data_type
         self.description = description
+        self.deadband = deadband
 
 
 class Point(db.Model):
