@@ -1,6 +1,33 @@
 from pylogix import PLC
-from db_models import Device, Tag, IntegerPoint, FloatPoint, StringPoint, BoolPoint
-from query_functions import tag_value_query, tag_value_query
+from flask import Flask
+from db_models import db, Device, Tag, IntegerPoint, FloatPoint, StringPoint, BoolPoint
+from query_functions import tag_value_query
+
+app = Flask(__name__)
+database_uri = 'mysql://luis:developer@localhost/logixhistorian'
+app.config['SQLALCHEMY_DATABASE_URI'] = database_uri
+db.init_app(app)
+
+cached_devices = []
+cached_tags = {}
+
+
+def look_for_new_devices():
+    # Read data from the database
+    with app.app_context():
+        devices = Device.query.all()
+        # Update cached devices as needed
+        if cached_devices is not devices:
+            cached_devices = devices
+
+
+def look_for_new_tags():
+    # Read data from the database
+    with app.app_context():
+        tags = Tag.query.all()
+        # Update cached devices as needed
+        if cached_tags is not tags:
+            cached_tags = tags
 
 
 def get_all_device_tags(device: Device):
