@@ -1,10 +1,10 @@
 from pylogix import PLC
 from flask import Flask
 from db_models import db, Device, Tag, IntegerPoint, FloatPoint, StringPoint, BoolPoint
-from query_functions import tag_value_query
+from app.query_functions import tag_value_query
 
 app = Flask(__name__)
-database_uri = 'mysql://luis:developer@localhost/logixhistorian'
+database_uri = 'mysql://luis:developer@mysql:3306/logixhistorian'
 app.config['SQLALCHEMY_DATABASE_URI'] = database_uri
 db.init_app(app)
 
