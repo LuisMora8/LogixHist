@@ -1,9 +1,11 @@
 from pylogix import PLC
 from flask import Flask
 from db_models import db, Device, Tag, IntegerPoint, FloatPoint, StringPoint, BoolPoint
-from app.query_functions import tag_value_query
+from query_functions import tag_value_query
 
 app = Flask(__name__)
+# MacOS MySQL
+# database_uri = 'mysql://luis:developer@localhost/logixhistorian'
 database_uri = 'mysql://luis:developer@mysql:3306/logixhistorian'
 app.config['SQLALCHEMY_DATABASE_URI'] = database_uri
 db.init_app(app)
@@ -12,43 +14,28 @@ cached_devices = []
 cached_tags = {}
 
 
-def look_for_new_devices():
+def look_for_new_devices(cached_devices):
     # Read data from the database
     with app.app_context():
         devices = Device.query.all()
         # Update cached devices as needed
         if cached_devices is not devices:
-            cached_devices = devices
+            return devices
+        return cached_tags
 
 
-def look_for_new_tags():
+def look_for_new_tags(cached_tags):
     # Read data from the database
     with app.app_context():
         tags = Tag.query.all()
         # Update cached devices as needed
         if cached_tags is not tags:
-            cached_tags = tags
+            return tags
+        else:
+            return cached_tags
 
 
 def get_all_device_tags(device: Device):
-    """
-    Looks up the available tags from a given device and organizes based off data types.
-
-    Args:
-        device (Device): A device object that has an IP Address
-
-    Returns:
-        dict: The available tags
-        {
-          'bool': [],
-          'int': [],
-          'float': [],
-          'string': []
-        }
-
-    Notes:
-        Any data types that are not ints, bools, floats, or strings will be ignored (UDTS, AB:1756_OF8_Float, etc..)
-    """
 
     available_tags = {
         'bool': [],
@@ -74,24 +61,6 @@ def get_all_device_tags(device: Device):
 
 
 def monitor_tags(device: Device, tags: [Tag]):
-    """
-    Brief description of what the function does.
-
-    Args:
-        arg1 (type): Description of arg1.
-        arg2 (type, optional): Description of arg2 with a default value (if applicable).
-        *args: Description of any additional positional arguments (if applicable).
-        **kwargs: Description of any additional keyword arguments (if applicable).
-
-    Returns:
-        return_type: Description of what the function returns.
-
-    Raises:
-        ExceptionType: Description of the exceptions raised by the function (if applicable).
-
-    Notes:
-        Any additional notes or details about the function.
-    """
 
     with PLC(device.ip_address) as comm:
 
@@ -103,3 +72,13 @@ def monitor_tags(device: Device, tags: [Tag]):
 
                 if response.Value is not last_point.value:
                     print(response)
+
+
+# Driver Code
+if __name__ == '__main__':
+    cached_devices = look_for_new_devices(cached_devices)
+    cached_tags = look_for_new_tags(cached_tags)
+    for device in cached_devices:
+        tags = get_all_device_tags(device)
+        for key in tags.keys():
+            print(tags[key])

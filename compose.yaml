@@ -10,7 +10,7 @@
 services:
   mysql:
     image: mysql/mysql-server
-    container_name: logixhistorian
+    container_name: logix-historian-mysql
     environment:
       - MYSQL_ROOT_PASSWORD=password
       - MYSQL_DATABASE=logixhistorian
@@ -35,6 +35,19 @@ services:
     ports:
       - 8000:5000
     command: ['python', 'app.py']
+
+  monitor-scripts:
+    container_name: logix-historian-monitor
+    build:
+      context: ./monitor_scripts
+    depends_on:
+      - mysql
+    env_file:
+      - .env
+    links:
+      - mysql
+    ports:
+      - 3307:3307
 
 volumes:
   database:

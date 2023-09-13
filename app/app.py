@@ -61,3 +61,4 @@ if __name__ == '__main__':
         admin.add_view(StringPointView(StringPoint, db.session))
         admin.add_view(BoolPointView(BoolPoint, db.session))
     app.run(host='0.0.0.0', port=5000, debug=True)
+    # app.run(debug=True)
