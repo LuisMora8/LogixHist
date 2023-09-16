@@ -25,6 +25,9 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://luis:developer@mysql:3306/logix
 BASE_URL = "http://localhost:5000"
 
 
+''' API Endpoints'''
+
+
 # Home Page
 @app.route('/')
 def index():
@@ -32,7 +35,49 @@ def index():
     return redirect(admin_url)
 
 
-# Attempt to reconnect to database in case of race issue (when starting for first time)
+# Create Device
+@app.route('/create/device/<devicename>', methods=['POST'])
+def create_device(devicename):
+    # Get parameters
+    ip_address = request.args.get('ip_address')
+    slot = request.args.get('slot')
+    device_type = request.args.get('type')
+    route = request.args.get('route')
+    connection_size = request.args.get('connection_size')
+    socket_timeout = request.args.get('socket_timeout')
+
+    if slot is None:
+        slot = 0  # The processor slot is not specified, an integer argument is needed
+
+    # Add new device to database
+    device = Device(device_name=devicename, ip_address=ip_address,
+                    processor_slot=slot, device_type=device_type, route=route, connection_size=connection_size, socket_timeout=socket_timeout)
+    db.session.add(device)
+    db.session.commit()
+
+
+# Create Tag
+@app.route('/create/tag/<tag_name>/<device_name>', methods=['POST'])
+def create_tag(tag_name, device_name):
+    # Get parameters
+    device_tag_name = request.args.get('device_tag_name')
+    data_type = request.args.get('data_type')
+    description = request.args.get('description')
+    deadband = request.args.get('deadband')
+
+    # Get device object from database
+    device = Device.query.filter_by(device_name=device_name).first()
+
+    # Add new tag to database
+    tag = Tag(device=device, tag_name=tag_name, device_tag_name=device_tag_name, data_type=data_type,
+              description=description, deadband=deadband)
+    db.session.add(tag)
+    db.session.commit()
+
+
+''' Attempt to reconnect to database in case of race issue (when starting for first time) '''
+
+
 def is_database_available():
     try:
         db.create_all()
@@ -47,6 +92,7 @@ def wait_for_database():
         raise Exception("Database nto available let")
 
 
+''' Driver Code '''
 # Driver Code
 if __name__ == '__main__':
     with app.app_context():
