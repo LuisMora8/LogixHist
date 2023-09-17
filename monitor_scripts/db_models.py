@@ -28,6 +28,14 @@ class Device(db.Model):
         self.connection_size = connection_size
         self.socket_timeout = socket_timeout
 
+    def __hash__(self):
+        return hash((self.device_name, self.ip_address))
+
+    def __eq__(self, other):
+        if isinstance(other, Device):
+            return (self.device_name == other.device_name and self.ip_address == other.ip_address)
+        return False
+
 
 # Tag Model
 class Tag(db.Model):
@@ -53,6 +61,14 @@ class Tag(db.Model):
         self.data_type = data_type
         self.description = description
         self.deadband = deadband
+
+    def __hash__(self):
+        return hash((self.tag_name, self.data_type))
+
+    def __eq__(self, other):
+        if isinstance(other, Tag):
+            return (self.tag_name == other.tag_name and self.data_type == other.data_type)
+        return False
 
 
 class Point(db.Model):
