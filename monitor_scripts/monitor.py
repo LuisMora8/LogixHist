@@ -7,10 +7,12 @@ import threading
 import pika
 import json
 
+
 # Remote Debugging
-# import ptvsd
-# ptvsd.enable_attach(address=('0.0.0.0', 5678))
-# ptvsd.wait_for_attach()
+import ptvsd
+ptvsd.enable_attach(address=('0.0.0.0', 5678))
+ptvsd.wait_for_attach()
+
 
 app = Flask(__name__)
 database_uri = 'mysql://luis:developer@mysql:3306/logixhistorian'
@@ -77,7 +79,10 @@ def initialize_cache():
                     print(
                         f"Failed to Read Data Point from Database: {tag.tag_name}")
 
-                cached_points[tag] = point.value
+                if point:
+                    cached_points[tag] = point.value
+                else:  # New tag no points yet in database
+                    cached_points[tag] = None
 
     print("Succesfully updated cache")
 
@@ -115,28 +120,31 @@ class MessageThread(threading.Thread):
         # Deserialize the JSON message body and process message:
         data = json.loads(body)
         with app.app_context():
+            breakpoint()
             if data['object'] == 'device':
                 # Query the device of interest by name
                 device = Device.query.filter_by(
                     device_name=data['device_name']).first()
 
-                self.update_device_cache(
-                    operation=data['operation'], device=device)
+                if device and device not in cached_devices:
+                    self.update_device_cache(
+                        operation=data['operation'], device=device)
 
             elif data['object'] == 'tag':
                 # Query the tag of interest by name
                 tag = Tag.query.filter_by(tag_name=data['tag_name']).first()
-                device = tag.device
 
-                self.update_tags_cache(
-                    operation=data['operation'], tag=tag, device=device)
+                if tag and tag not in cached_tags:
+                    device = tag.device
+                    self.update_tags_cache(
+                        operation=data['operation'], tag=tag, device=device)
 
         # Task was processed, acknowlede
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
     def receive_messages(self):
         connection = pika.BlockingConnection(
-            pika.ConnectionParameters(host='localhost'))
+            pika.ConnectionParameters(host='logix-historian-rabbitmq'))
         channel = connection.channel()
         channel.queue_declare(queue=self.queue)
         channel.basic_consume(
@@ -145,7 +153,7 @@ class MessageThread(threading.Thread):
         channel.start_consuming()
 
     def run(self):
-        self.receive_message_thread()
+        self.receive_messages()
 
 
 ''' Monitor Tags for the Device '''
@@ -177,7 +185,6 @@ class DeviceThread(threading.Thread):
 
     def monitor_tags(self):
         with PLC(self.device.ip_address) as comm:
-            # breakpoint()
             while not self.exit_event.is_set():
 
                 try:
@@ -213,7 +220,8 @@ class DeviceThread(threading.Thread):
 if __name__ == '__main__':
     initialize_cache()
 
-    receive_message_thread = MessageThread('db_update')
+    receive_message_thread = MessageThread(queue='db_update')
+    receive_message_thread.start()
 
     for device in cached_devices:
         thread = DeviceThread(device)
