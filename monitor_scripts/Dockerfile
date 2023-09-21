@@ -54,3 +54,5 @@ EXPOSE 3307
 
 # Placeholder command to keep the container running
 CMD ["tail", "-f", "/dev/null"]
+
+# ENTRYPOINT [ "python", "-m", "debugpy", "--listen", "0.0.0.0:5678", "--wait-for-client", "-m" ]

@@ -113,7 +113,7 @@ class StringPoint(Point):
     tag = db.relationship("Tag", backref="string_points", single_parent=True)
 
     def __init__(self, tag, value):
-        super.__init__()
+        super().__init__()
         self.tag = tag
         self.value = value
 
@@ -126,6 +126,6 @@ class BoolPoint(Point):
     tag = db.relationship("Tag", backref="bool_points", single_parent=True)
 
     def __init__(self, tag, value):
-        super.__init__()
+        super().__init__()
         self.tag = tag
         self.value = value
