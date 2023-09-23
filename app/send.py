@@ -31,10 +31,32 @@ def create_tag():
     message = {
         "object": "tag",
         "operation": "add",
-        "tag_name": "string2",
+        "name": "good",
     }
 
     send_message_to_rabbitmq(message=message)
 
 
-create_tag()
+def delete_tag():
+
+    message = {
+        "object": "tag",
+        "operation": "delete",
+        "name": "good"
+    }
+
+    send_message_to_rabbitmq(message=message)
+
+
+def create_device():
+
+    message = {
+        "object": "device",
+        "operation": "add",
+        "name": "test_device"
+    }
+
+    send_message_to_rabbitmq(message=message)
+
+
+delete_tag()

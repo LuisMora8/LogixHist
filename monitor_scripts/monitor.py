@@ -96,51 +96,93 @@ class MessageThread(threading.Thread):
         self.queue = queue
         self.exit_event = threading.Event()
 
-    def stop_thread_and_remove_device(device: Device):
+    def stop_thread_and_remove_device(self, device: Device):
         thread = device_threads.pop(device, None)
         if thread:
             thread.exit_event.set()
             thread.join()
             cached_devices.remove(device)
 
+    def add_device_and_start_thread(self, device: Device):
+        thread = DeviceThread(device)
+        device_threads[device] = thread
+        cached_devices.append(device)
+        cached_tags[device] = []
+        thread.start()
+
     def update_device_cache(self, operation: str, device: Device):
-        if operation == 'delete':
+        if operation == 'delete' and device in cached_devices:
             self.stop_thread_and_remove_device(device)
-        elif operation == 'add':
-            cached_devices.append(device)
+
+        elif operation == 'add' and device not in cached_devices:
+            self.add_device_and_start_thread(device)
 
     def update_tags_cache(self, operation: str, tag: Tag, device: Device):
-        if operation == 'delete':
-            cached_tags[device].remove(tag)
-        elif operation == 'add':
+        if operation == 'delete' and device in cached_tags and tag in cached_tags[device]:
+            # Pause the thread reading the tag
+            device_threads[device].pause_event.set()
+
+            if self.delete_tag_points_from_db(tag):
+                cached_points.pop(tag)
+                cached_tags[device].remove(tag)
+
+            else:
+                print(f"Failed to delete tag: {tag.device_tag_name}")
+
+            device_threads[device].pause_event.clear()  # Resume thread
+
+        elif operation == 'add' and device in cached_tags and tag not in cached_tags[device]:
             cached_tags[device].append(tag)
+
+    # User needs to delete tag from database, delete all points first
+    def delete_tag_points_from_db(self, tag: Tag):
+        if tag.data_type == 'int':
+            all_tag_points = IntegerPoint.query.filter_by(tag_id=tag.id)
+        elif tag.data_type == 'float':
+            all_tag_points = FloatPoint.query.filter_by(tag_id=tag.id)
+        elif tag.data_type == 'string':
+            all_tag_points = StringPoint.query.filter_by(tag_id=tag.id)
+        elif tag.data_type == 'bool':
+            all_tag_points = BoolPoint.query.filter_by(tag_id=tag.id)
+        else:
+            print("Failed to query all points")
+            return False
+        all_tag_points.delete()
+        tag_query = Tag.query.filter_by(id=tag.id)
+        tag_query.delete()
+        db.session.commit()
+        return True
 
     def callback(self, ch, method, properties, body):
 
         # Deserialize the JSON message body and process message:
         data = json.loads(body)
         with app.app_context():
-            breakpoint()
-            if data['object'] == 'device':
-                # Query the device of interest by name
-                device = Device.query.filter_by(
-                    device_name=data['device_name']).first()
 
-                if device and device not in cached_devices:
-                    self.update_device_cache(
-                        operation=data['operation'], device=device)
+            try:
+                if data['object'] == 'device':
+                    # Query the device of interest by name
+                    device = Device.query.filter_by(
+                        device_name=data['name']).first()
 
-            elif data['object'] == 'tag':
-                # Query the tag of interest by name
-                tag = Tag.query.filter_by(tag_name=data['tag_name']).first()
+                    if device:
+                        self.update_device_cache(
+                            operation=data['operation'], device=device)
 
-                if tag and tag not in cached_tags:
-                    device = tag.device
-                    self.update_tags_cache(
-                        operation=data['operation'], tag=tag, device=device)
+                elif data['object'] == 'tag':
+                    # Query the tag of interest by name
+                    tag = Tag.query.filter_by(tag_name=data['name']).first()
 
-        # Task was processed, acknowlede
-        ch.basic_ack(delivery_tag=method.delivery_tag)
+                    if tag:
+                        device = tag.device
+                        self.update_tags_cache(
+                            operation=data['operation'], tag=tag, device=device)
+
+                        # Task was processed, acknowlede
+                ch.basic_ack(delivery_tag=method.delivery_tag)
+
+            except Exception as e:
+                print(e)
 
     def receive_messages(self):
         connection = pika.BlockingConnection(
@@ -163,6 +205,7 @@ class DeviceThread(threading.Thread):
     def __init__(self, device: Device):
         super().__init__()
         self.device = device
+        self.pause_event = threading.Event()
         self.exit_event = threading.Event()
 
     def create_point_in_db(self, tag: Tag, response: lgx_response.Response):
@@ -189,9 +232,14 @@ class DeviceThread(threading.Thread):
 
                 try:
 
-                    tags = cached_tags[device]
+                    tags = cached_tags[self.device]
 
                     for tag in tags:
+
+                        # Thread paused by MessageThread, will restart loop to get updated tags list
+                        if self.pause_event.is_set():
+                            self.pause_event.wait()
+                            break
 
                         # Read the tag from PLC
                         response = comm.Read(tag=tag.device_tag_name)
