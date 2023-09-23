@@ -31,7 +31,7 @@ def create_tag():
     message = {
         "object": "tag",
         "operation": "add",
-        "name": "good",
+        "name": "TestString",
     }
 
     send_message_to_rabbitmq(message=message)
@@ -42,7 +42,7 @@ def delete_tag():
     message = {
         "object": "tag",
         "operation": "delete",
-        "name": "good"
+        "name": "TestString"
     }
 
     send_message_to_rabbitmq(message=message)
@@ -53,10 +53,21 @@ def create_device():
     message = {
         "object": "device",
         "operation": "add",
+        "name": "TestPLC"
+    }
+
+    send_message_to_rabbitmq(message=message)
+
+
+def delete_device():
+
+    message = {
+        "object": "device",
+        "operation": "delete",
         "name": "test_device"
     }
 
     send_message_to_rabbitmq(message=message)
 
 
-delete_tag()
+delete_device()

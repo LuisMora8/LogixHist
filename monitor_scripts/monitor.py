@@ -96,12 +96,23 @@ class MessageThread(threading.Thread):
         self.queue = queue
         self.exit_event = threading.Event()
 
+    def can_delete_device(self, device: Device):
+        all_device_tags = Tag.query.filter_by(device_id=device.id).all()
+        if len(all_device_tags) > 0:
+            return False
+        return True
+
     def stop_thread_and_remove_device(self, device: Device):
         thread = device_threads.pop(device, None)
         if thread:
             thread.exit_event.set()
             thread.join()
             cached_devices.remove(device)
+            cached_tags.pop(device)
+
+            device_query = Device.query.filter_by(id=device.id)
+            device_query.delete()
+            db.session.commit()
 
     def add_device_and_start_thread(self, device: Device):
         thread = DeviceThread(device)
@@ -112,7 +123,11 @@ class MessageThread(threading.Thread):
 
     def update_device_cache(self, operation: str, device: Device):
         if operation == 'delete' and device in cached_devices:
-            self.stop_thread_and_remove_device(device)
+            if self.can_delete_device(device):
+                self.stop_thread_and_remove_device(device)
+            else:
+                print(
+                    f"Cannot delete device: {device.device_name}. Device has dependent tags in database.")
 
         elif operation == 'add' and device not in cached_devices:
             self.add_device_and_start_thread(device)
@@ -161,6 +176,7 @@ class MessageThread(threading.Thread):
 
             try:
                 if data['object'] == 'device':
+                    breakpoint()
                     # Query the device of interest by name
                     device = Device.query.filter_by(
                         device_name=data['name']).first()
