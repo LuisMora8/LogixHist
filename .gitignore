@@ -4,3 +4,4 @@ project_scope.pages
 /logixhist/
 .env
 .vscode
+testplc.py

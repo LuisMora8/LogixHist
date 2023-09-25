@@ -48,11 +48,12 @@ services:
     volumes:
       - ./app:/app
 
-  # Web Frontend
+  # Backend Services
   monitor-scripts:
     container_name: logix-historian-monitor
     build:
       context: ./monitor_scripts
+    mem_limit: 2g
     depends_on:
       - mysql
       - rabbitmq
@@ -62,6 +63,8 @@ services:
       - mysql
     ports:
       - 3307:3307
+      - 5678:5678
+    command: ['python', 'monitor.py']
     volumes:
       - ./monitor_scripts:/monitor_scripts
 
