@@ -1,23 +1,40 @@
+import Listgroup from '../src/components/Listgroup.jsx';
+import Graph from '../src/components/Graph.jsx';
 import logo from './logo.svg';
 import './App.css';
 
-function App() {
+function App(props) {
+  const subject = props.subject;
+  const device_objects = [
+    'TestPLC',
+    'test_device',
+    'Device_3',
+    'TestPLC',
+    'test_device',
+    'Device_3',
+    'Device_3',
+    'TestPLC',
+    'test_device'
+  ];
+  const tag_objects = [
+    'string1',
+    'bool1',
+    'int1',
+    'dint1',
+    'float1',
+    'string2',
+    'bool2',
+    'int2',
+    'dint2',
+    'float2',
+  ];
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <div>
+        <Listgroup items={device_objects} ></Listgroup>
+        <Listgroup items={tag_objects} ></Listgroup>
+      </div>
+      <Graph></Graph>
     </div>
   );
 }
