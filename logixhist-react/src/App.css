@@ -1,6 +1,14 @@
 .App {
   display: flex;
-  align-items: center;
+}
+
+.Graph {
+  flex: 3;
+  margin: auto;
+}
+
+.Sidebar {
+  flex: 1;
 }
 
 .App-logo {

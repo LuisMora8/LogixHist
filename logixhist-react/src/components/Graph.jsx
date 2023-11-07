@@ -1,8 +1,10 @@
 import { Line } from 'react-chartjs-2';
-// import { useEffect, useState } from "react";
+// import { useEffect, useState } from 'react';
 
-// import '../assets/styles/list-groups.css'
+import '../assets/styles/list-groups.css';
 // import '../assets/styles/bootstrap.min.css';
+
+import 'chartjs-plugin-annotation';
 
 import {
   Chart as ChartJS,
@@ -13,7 +15,7 @@ import {
   Title,
   Tooltip,
   Legend,
-} from "chart.js";
+} from 'chart.js';
 
 ChartJS.register(
   CategoryScale,
@@ -22,60 +24,95 @@ ChartJS.register(
   LineElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  require('chartjs-plugin-annotation')
 );
 
-// const chartData = {
-//   labels: ["test"],
-//   datasets: [
-//     {
-//       label: "Prices",
-//       data: [1,3,4],
-//       borderColor: "black",
-//     },
-//   ]
-// }
-
 const chartData = {
-  labels: ["January", "February", "March", "April", "May"],
+  labels: ['1', '2', '3', '4', '5'],
   datasets: [
     {
-      label: "Temperature",
-      data: [10, 20, 15, 30, 25],
-      borderColor: "red",
-      fill: true,
+      label: 'Temperature',
+      data: [10, 15, 30, 20, 25],
+      borderColor: 'red',
+      yAxisID: 'Temperature',
     },
     {
-      label: "Power",
-      data: ['ON', 'ON', 'OFF', 'ON', 'OFF'],
-      borderColor: "blue",
-      fill: true,
-      yAxisID: 'power',
-      stepped: true
+      label: 'Power',
+      data: [1, 0, 1, 1, 0],
+      borderColor: 'blue',
+      yAxisID: 'Power',
+      stepped: true,
+    },
+    {
+      label: 'Level',
+      data: [20, 35, 10, 60, 25],
+      borderColor: 'green',
+      yAxisID: 'Level'
+    },
+    {
+      label: 'Switch',
+      data: [1, 0, 1, 1, 0],
+      borderColor: 'orange',
+      yAxisID: 'Switch',
+      stepped: true,
     },
   ],
 };
 
 const options = {
   scales: {
-    y: {
-      beginAtZero: true,
-      stack: 'power'
+    Temperature:{
+      type: 'linear',
+      stack: 'trend',
+      grid: {
+        borderColor: 'red'
+      },
     },
-    power:{
-      type: "category",
-      labels: ["ON", "OFF"],
-      stack: "power",
-      offset: true
+    Power:{
+      type: 'category',
+      labels: ['ON', 'OFF'],
+      stack: 'trend',
+      grid: {
+        borderColor: 'blue'
+      },
+      offset: true,
+    },
+    Level:{
+      type: 'linear',
+      stack: 'trend',
+      grid: {
+        borderColor: 'red'
+      }
+    },
+    Switch:{
+      type: 'category',
+      labels: ['ON', 'OFF'],
+      stack: 'trend',
+      grid: {
+        borderColor: 'orange'
+      },
+      offset: true,
     }
   },
+  // annotation: {
+  //   annotations: [
+  //     {
+  //       type: 'line',
+  //       mode: 'vertical',
+  //       scaleID: 'x',
+  //       value: 2,
+  //       borderColor: 'orange',
+  //       borderWidth: 5,
+  //     }
+  //   ]
+  // }
 };
 
 
 function Graph() {
   return (
     <div>
-      <h2>Trending Data</h2>
       <Line data={chartData} options={options} />
     </div>
   );

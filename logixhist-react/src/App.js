@@ -30,11 +30,13 @@ function App(props) {
   ];
   return (
     <div className="App">
-      <div>
+      <div className='Sidebar'>
         <Listgroup items={device_objects} ></Listgroup>
         <Listgroup items={tag_objects} ></Listgroup>
       </div>
-      <Graph></Graph>
+      <div className='Graph'>
+        <Graph></Graph>
+      </div>
     </div>
   );
 }
